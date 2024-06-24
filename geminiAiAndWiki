@@ -1,0 +1,57 @@
+# this code integrates gemini ai and wikipedia scraping to get info and summarize it.
+# Googels geminiAI api and web scraper soup from bs4 is used.
+
+import requests, os, json
+from bs4 import BeautifulSoup
+
+def speak(promt):
+    API_KEY = os.environ['gemini_api_key']
+    promt = str(promt)
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": API_KEY
+    }
+    
+    data = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": promt}
+                ]
+            }
+        ]
+    }
+    
+    url = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+    
+    response = requests.post(url, json=data, headers=headers)
+    result = response.json()
+    return result
+
+    # print(json.dumps(result, indent=2))
+    # print(json.dumps(result['candidates'][0], indent=2))
+
+url = input("Website url > ")
+
+response = requests.get(url)
+html = response.text
+soup = BeautifulSoup(html, "html.parser")
+myLinks = soup.find_all("p")
+
+f = open("wikiInfo.text", "w")
+for item in myLinks:
+    f.write(item.text)
+f.close()
+
+f = open("wikiInfo.text", "r")
+promt = f.read().strip()
+f.close()
+# print(promt.strip())
+
+give = f"""{promt} 
+
+    summarize this text as little as posible with some bullet point"""
+result = speak(promt)
+
+print(result['candidates'][0]['content']['parts'][0]['text'])
